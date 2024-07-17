@@ -1,0 +1,185 @@
+{% extends 'network/base.html' %}
+
+{% block title %}拓扑图{% endblock %}
+
+{% block content %}
+    <style>
+        #cy {
+            width: 100%;
+            height: 1200px;
+            display: block;
+        }
+    </style>
+    <div id="cy"></div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.20.0/cytoscape.min.js"></script>
+    <script>
+        var cy = cytoscape({
+            container: document.getElementById('cy'),
+            elements: [],
+            style: [
+                {
+                    selector: 'node[type="core"]',
+                    style: {
+                        'shape': 'rectangle',
+                        'background-opacity': 0,
+                        'background-image': 'url(https://img.icons8.com/ios-filled/50/000000/server.png)',
+                        'background-fit': 'cover',
+                        'label': 'data(id)',
+                        'text-valign': 'top',
+                        'color': '#000',
+                        'font-size': '20px',
+                        'width': '40px',
+                        'height': '40px'
+                    }
+                },
+                {
+                    selector: 'node[type="aggregation"]',
+                    style: {
+                        'shape': 'rectangle',
+                        'background-opacity': 0,
+                        'background-image': 'url(https://img.icons8.com/ios-filled/50/000000/switch.png)',
+                        'background-fit': 'cover',
+                        'label': 'data(id)',
+                        'text-valign': 'top',
+                        'color': '#000',
+                        'font-size': '20px',
+                        'width': '40px',
+                        'height': '40px'
+                    }
+                },
+                {
+                    selector: 'node[type="edge"]',
+                    style: {
+                        'shape': 'rectangle',
+                        'background-opacity': 0,
+                        'background-image': 'url(https://img.icons8.com/ios-filled/50/000000/router.png)',
+                        'background-fit': 'cover',
+                        'label': 'data(id)',
+                        'text-valign': 'top',
+                        'color': '#000',
+                        'font-size': '20px',
+                        'width': '40px',
+                        'height': '40px'
+                    }
+                },
+                {
+                    selector: 'node[type="host"]',
+                    style: {
+                        'shape': 'rectangle',
+                        'background-opacity': 0,
+                        'background-image': 'url(https://img.icons8.com/ios-filled/50/000000/computer.png)',
+                        'background-fit': 'cover',
+                        'label': 'data(id)',
+                        'text-valign': 'top',
+                        'color': '#000',
+                        'font-size': '20px',
+                        'width': '40px',
+                        'height': '40px'
+                    }
+                },
+                {
+                    selector: 'edge',
+                    style: {
+                        'width': 2,
+                        'line-color': '#ccc',
+                        'target-arrow-color': '#ccc',
+                        'target-arrow-shape': 'triangle'
+                    }
+                }
+            ],
+            layout: {
+                name: 'preset'
+            }
+        });
+
+        fetch('/topology_data/')
+            .then(response => response.json())
+            .then(elements => {
+                // 分配不同类型节点的位置
+                const coreX = 650, coreY = 100, coreXSpacing = 200;
+                const aggrStartX = 600, aggrY = 300, aggrSpacing = 100;
+                const edgeStartX = 600, edgeY = 500, edgeSpacing = 100;
+                const hostStartX = 350, hostY = 700, hostSpacing = 80;
+
+                let corexIndex = 0, aggrIndex = 0, edgeIndex = 0, hostIndex = 0;
+                elements.forEach(element => {
+                    if (element.data.type === 'core') {
+                        element.position = { x: coreX + (corexIndex % 4) * coreXSpacing, y: coreY };
+                        corexIndex++;
+                    } else if (element.data.type === 'aggregation') {
+                        element.position = { x: aggrStartX + (aggrIndex % 8) * aggrSpacing, y: aggrY };
+                        aggrIndex++;
+                    } else if (element.data.type === 'edge') {
+                        element.position = { x: edgeStartX + (edgeIndex % 8) * edgeSpacing, y: edgeY };
+                        edgeIndex++;
+                    } else if (element.data.type === 'host') {
+                        element.position = { x: hostStartX + (hostIndex % 16) * hostSpacing, y: hostY };
+                        hostIndex++;
+                    }
+                });
+
+                cy.add(elements);
+                cy.layout({ name: 'preset' }).run();
+            });
+
+        let selectedNodes = [];
+
+        cy.on('tap', 'node', function(evt) {
+            var node = evt.target;
+            selectedNodes.push(node.id());
+            if (selectedNodes.length === 2) {
+                var src = selectedNodes[0];
+                var dst = selectedNodes[1];
+
+                console.log(`Selected nodes: ${src}, ${dst}`);
+
+                fetch(`/dynamic-routing/?src=${src}&dst=${dst}`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('Received data:', data);
+
+                        if (data.path) {
+                            // 重置所有边的颜色
+                            cy.edges().style('line-color', '#ccc');
+
+                            // 更新最短路径上的边的颜色
+                            for (let i = 0; i < data.path.length - 1; i++) {
+                                let edge = cy.getElementById(`${data.path[i]}-${data.path[i + 1]}`);
+                                if (edge.length === 0) {
+                                    edge = cy.getElementById(`${data.path[i + 1]}-${data.path[i]}`);
+                                }
+                                if (edge.length > 0) {
+                                    edge.style('line-color', '#FF4500');
+                                }
+                            }
+                        }
+                        selectedNodes = [];
+                    })
+                    .catch(err => {
+                        console.error('Fetch error:', err);
+                        selectedNodes = [];
+                    });
+            }
+        });
+
+        function updateLinkData() {
+            fetch('/get_link_data/')
+                .then(response => response.json())
+                .then(elements => {
+                    elements.forEach(element => {
+                        var edge = cy.getElementById(element.data.id);
+                        if (edge.length > 0) {
+                            edge.data('bw', element.data.bw);
+                        }
+                    });
+                });
+        }
+
+        setInterval(updateLinkData, 1000);
+    </script>
+{% endblock %}

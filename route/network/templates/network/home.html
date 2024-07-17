@@ -1,0 +1,62 @@
+{% extends 'network/base.html' %}
+
+{% block title %}什么是 SDN?{% endblock %}
+
+{% block content %}
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        .header {
+            background-color: #000;
+            color: #fff;
+            padding: 50px 0;
+            text-align: center;
+        }
+        .content {
+            max-width: 1200px;
+            margin: 20px auto;
+            background-color: #fff;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            font-size: 5em;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        p {
+            font-size: 1.2em;
+            line-height: 1.6;
+        }
+    </style>
+    <div class="header">
+        <h1>什么是 SDN?</h1>
+    </div>
+    <div class="content">
+        <h2>什么是 SDN?</h2>
+        <p>
+            软件定义网络（SDN）是一种网络虚拟化和容器化方法，有助于优化网络资源并快速调整网络，使其适应不断变化的业务需求、应用和流量。这种方法可通过分离网络的控制平面和数据平面来构建软件可编程的架构。
+        </p>
+        <p>
+            借助 SDN，网络编排、管理、分析和自动化成为了 SDN 控制器的工作职责。控制器可以利用现代云计算和存储资源的规模、性能和可用性。SDN 控制器越来越多地以采用开放式标准和 API 的平台为基础，使其能够编排、管理和控制来自不同供应商的网络设备。
+        </p>
+        <p>
+            SDN 能够提供许多业务优势。控制层和数据传输层的分离提高了灵活性，并缩短了新应用的上线时间。能够更快地解决网络问题和故障，从而提高了网络可用性。最后，可编程性使 IT 组织能够实现网络功能自动化，并降低运营成本。
+        </p>
+        <p>
+            SDN 可以和另一项技术（即网络功能虚拟化 (NFV)）紧密结合。NFV 提供了虚拟化基于设备的网络功能的能力，例如防火墙、负载平衡器和 WAN 加速器。SDN 提供的集中控制可以高效地管理和编排这些由 NFV 提供支持的虚拟网络功能 (VNF)。
+        </p>
+        <h2>SDN 可以解决哪些问题？</h2>
+        <p>
+            借助可编程性和集中控制，SDN 可以降低管理高度分布式物理网络基础架构的复杂性。IT 组织可以在软件的中心位置管理端到端网络，并自动执行网络运维的某些方面。这样，SDN 便可加速网络部署、配置更改和故障排除，从而降低运维复杂性和成本。此外，SDN 还加快了网络问题和故障的解决速度，从而延长正常运行时间并提升用户体验。
+        </p>
+        <h2>SDN 的工作原理是什么？</h2>
+        <p>
+            SDN 将控制平面软件与网络硬件分离，使网络管理员可以使用 API 以编程方式配置和管理远程连接的设备。SDN 提供可控制整个分布式网络的通用界面，使得 IT 人员无需单独对每台设备进行升级、故障排除和管理。
+        </p>
+    </div>
+{% endblock %}

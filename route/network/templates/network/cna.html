@@ -1,0 +1,121 @@
+{% extends 'network/base.html' %}
+
+{% block title %}网络拓扑{% endblock %}
+
+{% block content %}
+    <div id="cy" style="width: 100%; height: 600px;"></div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.20.0/cytoscape.min.js"></script>
+    <script>
+        var cy = cytoscape({
+            container: document.getElementById('cy'),
+            elements: [],
+            style: [
+                {
+                    selector: 'node',
+                    style: {
+                        'label': 'data(id)',
+                        'text-valign': 'center',
+                        'color': 'black',
+                        'background-color': '#61bffc'
+                    }
+                },
+                {
+                    selector: 'edge',
+                    style: {
+                        'width': 2,
+                        'line-color': '#ccc',
+                        'target-arrow-color': '#ccc',
+                        'target-arrow-shape': 'triangle',
+                        'curve-style': 'bezier',
+                        'label': '',
+                    }
+                }
+            ],
+            layout: {
+                name: 'cose',
+                idealEdgeLength: 100,
+                nodeRepulsion: 400000,
+                nodeOverlap: 10,
+                padding: 10,
+                edgeElasticity: 100,
+                nestingFactor: 5,
+                gravity: 80,
+                numIter: 1000,
+                initialTemp: 200,
+                coolingFactor: 0.95,
+                minTemp: 1.0
+            }
+        });
+
+        fetch('/topology_data/')
+            .then(response => response.json())
+            .then(elements => {
+                cy.add(elements);
+                cy.layout({ name: 'cose' }).run();
+            });
+
+        function updateLinkData() {
+        fetch('/get_link_data/')
+            .then(response => response.json())
+            .then(elements => {
+                elements.forEach(element => {
+                    var edge = cy.getElementById(element.data.id);
+                    if (edge.length > 0) {
+                        edge.data('bw', element.data.bw);
+                    }
+                });
+            });
+    }
+
+    setInterval(updateLinkData, 1000);
+
+    let selectedNode = null;
+
+    cy.on('tap', 'node', function(evt) {
+        var node = evt.target;
+        var nodeId = node.id();
+
+        if (selectedNode) {
+            fetch(`/dynamic-routing/?src=${selectedNode}&dst=${nodeId}`)
+                .then(response => response.json())
+                .then(data => {
+                    // 重置所有边和节点的颜色
+                    cy.elements('node').style('background-color', '#61bffc');
+                    cy.elements('edge').style('line-color', '#ccc');
+
+                    // 将路径上的边颜色改变
+                    var path = data.path;
+                    for (let i = 0; i < path.length - 1; i++) {
+                        let edgeId = `${path[i]}-${path[i+1]}`;
+                        let edge = cy.getElementById(edgeId);
+                        if (edge.length === 0) {
+                            edgeId = `${path[i+1]}-${path[i]}`;
+                            edge = cy.getElementById(edgeId);
+                        }
+                        if (edge.length > 0) {
+                            edge.style('line-color', 'red');
+                        }
+                    }
+                    selectedNode = null;
+                })
+                .catch(error => console.error('Error fetching path:', error));
+        } else {
+            selectedNode = nodeId;
+            // 改变选中节点颜色
+            node.style('background-color', 'orange');
+
+            // 获取该节点能到达的节点
+            fetch(`/reachable-nodes/?src=${nodeId}`)
+                .then(response => response.json())
+                .then(data => {
+                    let reachableNodes = data.nodes;
+                    reachableNodes.forEach(nodeId => {
+                        let targetNode = cy.getElementById(nodeId);
+                        targetNode.style('background-color', 'yellow');
+                    });
+                })
+                .catch(error => console.error('Error fetching reachable nodes:', error));
+        }
+    });
+</script>
+{% endblock %}

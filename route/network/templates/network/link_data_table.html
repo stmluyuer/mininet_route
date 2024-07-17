@@ -1,0 +1,113 @@
+{% extends "network/base.html" %}
+
+{% block title %}链路数据表{% endblock %}
+
+{% block content %}
+    <h1 class="page-title">链路数据表</h1>
+    <div class="table-container">
+        <table id="link-data-table" class="table table-striped table-bordered">
+            <thead>
+                <tr>
+                    <th>Link</th>
+                    <th>Bandwidth (Mbps)</th>
+                    <th>Delay (ms)</th>
+                    <th>Loss (%)</th>
+                    <th>Jitter (ms)</th>
+                    <th>Error (%)</th>
+                    <th>Max Queue Size (packets)</th>
+                    <th>MTU (bytes)</th>
+                </tr>
+            </thead>
+            <tbody id="link-data-body">
+                {% for link_data in link_data_list %}
+                    <tr>
+                        <td>{{ link_data.link }}</td>
+                        <td>{{ link_data.bw }} Mbps</td>
+                        <td>{{ link_data.delay }} ms</td>
+                        <td>{{ link_data.loss }} %</td>
+                        <td>{{ link_data.jitter }} ms</td>
+                        <td>{{ link_data.error }} %</td>
+                        <td>{{ link_data.max_queue_size }} packets</td>
+                        <td>{{ link_data.mtu }} bytes</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <style>
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center; /* 确保文本居中 */
+            vertical-align: middle; /* 垂直居中 */
+        }
+
+        th {
+            background-color: #9e0c0c;
+            color: white;
+        }
+
+        th:nth-child(1) {
+            background-color: #1E90FF;
+        }
+
+        th:nth-child(2) {
+            background-color: #32CD32;
+        }
+
+        th:nth-child(3) {
+            background-color: #FFD700;
+        }
+
+        th:nth-child(4) {
+            background-color: #FF6347;
+        }
+
+        th:nth-child(5) {
+            background-color: #8A2BE2; /* 紫色 */
+        }
+
+        th:nth-child(6) {
+            background-color: #FF4500; /* 橙红色 */
+        }
+
+        th:nth-child(7) {
+            background-color: #424e47; /* 海绿色 */
+        }
+
+        th:nth-child(8) {
+            background-color: #0b0b0b; /* 金色 */
+        }
+    </style>
+
+    <script>
+        function fetchLinkData() {
+            fetch("{% url 'get_link_data' %}")
+                .then(response => response.json())
+                .then(data => {
+                    const tableBody = document.getElementById('link-data-body');
+                    tableBody.innerHTML = '';
+                    data.forEach(link_data => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${link_data.data.source} <-> ${link_data.data.target}</td>
+                            <td>${link_data.data.bw} Mbps</td>
+                            <td>${link_data.data.delay} ms</td>
+                            <td>${link_data.data.loss} %</td>
+                            <td>${link_data.data.jitter} ms</td>
+                            <td>${link_data.data.error} %</td>
+                            <td>${link_data.data.max_queue_size} packets</td>
+                            <td>${link_data.data.mtu} bytes</td>
+                        `;
+                        tableBody.appendChild(row);
+                    });
+                })
+                .catch(error => console.error('Error fetching link data:', error));
+        }
+
+        // Fetch link data every 5 seconds
+        setInterval(fetchLinkData, 1000);
+        fetchLinkData(); // Initial fetch
+    </script>
+{% endblock %}

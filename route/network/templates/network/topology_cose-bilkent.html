@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Network Topology</title>
+    <!-- 引入 Cytoscape.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.20.0/cytoscape.min.js"></script>
+    <!-- 引入 Cytoscape.js cose-bilkent 布局插件 -->
+    <script src="https://cdn.jsdelivr.net/npm/cytoscape-cose-bilkent@4.0.0/cytoscape-cose-bilkent.min.js"></script>
+</head>
+<body>
+    <div id="cy" style="width: 100%; height: 100vh;"></div>
+    <script>
+        // 注册 cose-bilkent 布局
+        cytoscape.use(cytoscapeCoseBilkent);
+
+        // 初始化 Cytoscape 实例
+        var cy = cytoscape({
+            container: document.getElementById('cy'),
+            elements: [],
+            style: [
+                {
+                    selector: 'node',
+                    style: {
+                        'label': 'data(id)',
+                        'text-valign': 'center',
+                        'color': 'black',
+                        'background-color': '#61bffc'
+                    }
+                },
+                {
+                    selector: 'node[type="host"]',
+                    style: {
+                        'background-color': '#a8e6cf'
+                    }
+                },
+                {
+                    selector: 'edge',
+                    style: {
+                        'width': 2,
+                        'line-color': '#ccc',
+                        'target-arrow-color': '#ccc',
+                        'target-arrow-shape': 'triangle',
+                        'curve-style': 'bezier',
+                        'label': 'data(bw)',
+                        'font-size': '8px'  // 设置链路显示的宽带字体大小
+                    }
+                }
+            ],
+            layout: {
+                name: 'cose-bilkent',
+                idealEdgeLength: 200,  // 增加边的长度
+                nodeRepulsion: 1000000,
+                nodeOverlap: 10,
+                padding: 10,
+                edgeElasticity: 100,
+                nestingFactor: 5,
+                gravity: 40,
+                numIter: 1000,
+                initialTemp: 100,
+                coolingFactor: 0.95,
+                minTemp: 1.0
+            }
+        });
+
+        // 获取初始拓扑数据
+        fetch('/network/topology_data/')
+            .then(response => response.json())
+            .then(elements => {
+                cy.add(elements);
+                cy.layout({ name: 'cose-bilkent' }).run();  // 运行 "cose-bilkent" 布局
+            });
+
+        // 定期获取并更新链路数据
+        function updateLinkData() {
+            fetch('/network/link_data/')
+                .then(response => response.json())
+                .then(elements => {
+                    elements.forEach(element => {
+                        var edge = cy.getElementById(element.data.id);
+                        if (edge.length > 0) {
+                            edge.data('bw', element.data.bw);
+                        }
+                    });
+                });
+        }
+
+        // 每秒更新一次链路数据
+        setInterval(updateLinkData, 1000);
+    </script>
+</body>
+</html>
